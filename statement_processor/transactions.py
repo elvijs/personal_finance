@@ -5,7 +5,7 @@ from typing import Optional
 import re
 from collections import OrderedDict
 
-from rules import Columns, load_map
+from statement_processor.rules import Columns, load_map
 
 
 class Transaction:

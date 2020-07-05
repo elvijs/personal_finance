@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "statement_processor"
+version = "0.1.0"
+description = "A few little helper scripts to automate aggregating my personal finance statements"
+authors = ["elvijs <elvijsdr@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+python-dateutil = "^2.8.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.4.3"
+taskipy = "^1.2.1"
+mypy = "^0.782"
+flake8 = "^3.8.3"
+black = "^19.10b0"
+isort = "^4.3.21"
+
+[tool.taskipy.tasks]
+all_checks = "task test && task check_format && task static_checks"
+test = "pytest tests"
+static_checks = "task mypy && task lint"
+mypy = "mypy statement_processor"
+lint = "flake8 --max-line-length 88 statement_processor"
+format = "task black && task isort"
+check_format = "task black --check && task isort --diff"
+black = "black statement_processor"
+isort = "isort --atomic statement_processor/**/*.py"
+
+process_statements = "python -m statement_processor.main"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

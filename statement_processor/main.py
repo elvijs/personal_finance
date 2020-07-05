@@ -9,9 +9,9 @@ import logging
 from dateutil.relativedelta import relativedelta
 from typing import Sequence
 
-from readers import SantanderBankStatementReader, RevolutStatementReader, \
+from statement_processor.readers import SantanderBankStatementReader, RevolutStatementReader, \
     SantanderCreditCardStatementReader
-from statements import StatementReporter
+from statement_processor.statements import StatementReporter
 
 logger = logging.getLogger("Statement processing")
 

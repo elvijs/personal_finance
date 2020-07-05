@@ -2,13 +2,12 @@ import csv
 import datetime
 import logging
 
-from typing import Sequence, Set
+from typing import Sequence
 
-from transactions import Transaction, ProcessedTransaction
+from statement_processor.rules import get_ignore_rules
+from statement_processor.transactions import Transaction, ProcessedTransaction
 
 logger = logging.getLogger("Statement reader")
-
-EXPECTED_IGNORED_TRANSACTION_RULES = ["type", "description"]
 
 
 class Statement:
@@ -42,17 +41,9 @@ class Statement:
                                self.account_number, self.transactions)
 
 
-def _load_ignore_rules(type_: str) -> Set[str]:
-    with open("../rules/ignored_transactions.csv", "r") as f:
-        reader = csv.DictReader(f, delimiter=',')
-        assert list(reader.fieldnames) == EXPECTED_IGNORED_TRANSACTION_RULES
-        result = {row["description"] for row in reader if row["type"] == type_}
-    return result
-
-
 class SingleStatementReporter:
-    IGNORED_FULL_DESCRIPTIONS = _load_ignore_rules("full")
-    IGNORED_PARTIAL_DESCRIPTIONS = _load_ignore_rules("partial")
+    IGNORED_FULL_DESCRIPTIONS = get_ignore_rules("full")
+    IGNORED_PARTIAL_DESCRIPTIONS = get_ignore_rules("partial")
 
     def __init__(self, statement: Statement) -> None:
         self._statement = statement

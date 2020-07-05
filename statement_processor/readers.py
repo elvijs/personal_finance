@@ -11,8 +11,8 @@ from typing import Tuple, Union, Sequence, Optional, IO
 
 from dateutil.relativedelta import relativedelta
 
-from statements import Statement
-from transactions import Transaction
+from statement_processor.statements import Statement
+from statement_processor.transactions import Transaction
 
 
 FromToValue = Tuple[datetime.date, datetime.date]
