@@ -14,7 +14,7 @@ class Transaction:
         description: str,
         amount: decimal.Decimal,
         balance: decimal.Decimal,
-        bank_category: str = None,
+        bank_category: Optional[str] = None,
     ) -> None:
         self._date = date
         self._description = description
@@ -39,7 +39,7 @@ class Transaction:
         return self._balance
 
     @property
-    def bank_category(self) -> str:
+    def bank_category(self) -> Optional[str]:
         return self._bank_category
 
     def __str__(self) -> str:
@@ -101,11 +101,11 @@ class ProcessedTransaction(Transaction):
         self._category = self._get_category()
 
     @property
-    def category(self) -> str:
+    def category(self) -> Optional[str]:
         return self._category
 
     @property
-    def sub_category(self) -> str:
+    def sub_category(self) -> Optional[str]:
         return self._sub_category
 
     @property
@@ -138,10 +138,10 @@ class ProcessedTransaction(Transaction):
         return description
 
     def _get_category(self) -> Optional[str]:
-        if self.bank_category in self.BANK_CATEGORY_TO_CATEGORY_MAP:
+        if self.bank_category and self.bank_category in self.BANK_CATEGORY_TO_CATEGORY_MAP:
             return self.BANK_CATEGORY_TO_CATEGORY_MAP[self.bank_category]
 
-        if self.sub_category in self.SUB_CATEGORY_TO_CATEGORY_MAP:
+        if self.sub_category and self.sub_category in self.SUB_CATEGORY_TO_CATEGORY_MAP:
             return self.SUB_CATEGORY_TO_CATEGORY_MAP[self.sub_category]
 
         if self.description in self.SHORT_DESC_TO_CATEGORY_MAP:
@@ -150,7 +150,7 @@ class ProcessedTransaction(Transaction):
         return None
 
     def _get_sub_category(self) -> Optional[str]:
-        if self.bank_category in self.BANK_CATEGORY_TO_SUB_CATEGORY_MAP:
+        if self.bank_category and self.bank_category in self.BANK_CATEGORY_TO_SUB_CATEGORY_MAP:
             return self.BANK_CATEGORY_TO_SUB_CATEGORY_MAP[self.bank_category]
 
         if self.description in self.SHORT_DESC_TO_SUB_CATEGORY_MAP:

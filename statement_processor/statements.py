@@ -1,7 +1,7 @@
 import csv
 import datetime
 import logging
-from typing import Sequence
+from typing import Sequence, List
 
 from statement_processor.rules import IgnoredTransactionType, get_ignore_rules
 from statement_processor.transactions import ProcessedTransaction, Transaction
@@ -86,7 +86,7 @@ class StatementReporter:
         self._validate_statements()
 
     def get_report(self) -> Sequence[ProcessedTransaction]:
-        report = []
+        report: List[ProcessedTransaction] = []
         for statement in self._statements:
             reporter = SingleStatementReporter(statement)
             report += reporter.get_report()
