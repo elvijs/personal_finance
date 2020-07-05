@@ -4,7 +4,7 @@ import re
 from collections import OrderedDict
 from typing import Optional
 
-from statement_processor.rules import Columns, load_map
+from statement_processor.rules import MappingRuleColumn, load_map
 
 
 class Transaction:
@@ -62,22 +62,26 @@ class Transaction:
 
 class ProcessedTransaction(Transaction):
     LONG_DESC_REGEX_TO_SHORT_DESC = load_map(
-        from_column=Columns.long_desc_regex, to_column=Columns.short_desc
+        from_column=MappingRuleColumn.long_desc_regex,
+        to_column=MappingRuleColumn.short_desc,
     )
     SHORT_DESC_TO_CATEGORY_MAP = load_map(
-        from_column=Columns.short_desc, to_column=Columns.category
+        from_column=MappingRuleColumn.short_desc, to_column=MappingRuleColumn.category
     )
     SHORT_DESC_TO_SUB_CATEGORY_MAP = load_map(
-        from_column=Columns.short_desc, to_column=Columns.sub_category
+        from_column=MappingRuleColumn.short_desc,
+        to_column=MappingRuleColumn.sub_category,
     )
     SUB_CATEGORY_TO_CATEGORY_MAP = load_map(
-        from_column=Columns.sub_category, to_column=Columns.category
+        from_column=MappingRuleColumn.sub_category, to_column=MappingRuleColumn.category
     )
     BANK_CATEGORY_TO_CATEGORY_MAP = load_map(
-        from_column=Columns.bank_category, to_column=Columns.category
+        from_column=MappingRuleColumn.bank_category,
+        to_column=MappingRuleColumn.category,
     )
     BANK_CATEGORY_TO_SUB_CATEGORY_MAP = load_map(
-        from_column=Columns.bank_category, to_column=Columns.sub_category
+        from_column=MappingRuleColumn.bank_category,
+        to_column=MappingRuleColumn.sub_category,
     )
 
     HOUSEHOLD_CATEGORIES = {"Household essentials", "Household nice-to-haves"}

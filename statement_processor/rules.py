@@ -10,12 +10,23 @@ ignored_transactions_file = (
     Path(_this_file).parent.parent / "rules/ignored_transactions.csv"
 )
 
-EXPECTED_IGNORED_TRANSACTION_RULES = ["type", "description"]
+
+class IgnoredTransactionColumn(Enum):
+    type = "type"
+    description = "description"
+
+
+class IgnoredTransactionType(Enum):
+    full = "full"
+    # Transaction descriptions matching this message in full will be ignored
+    partial = "partial"
+    # Transaction descriptions containing this message will be ignored
+
 
 ColumnValues = Mapping[str, str]
 
 
-class Columns(Enum):
+class MappingRuleColumn(Enum):
     long_desc_regex = "long_description_regex"
     short_desc = "short_description"
     bank_category = "bank_category"
@@ -23,7 +34,9 @@ class Columns(Enum):
     category = "category"
 
 
-def load_map(from_column: Columns, to_column: Columns) -> ColumnValues:
+def load_map(
+    from_column: MappingRuleColumn, to_column: MappingRuleColumn
+) -> ColumnValues:
     return {
         row[from_column.value]: row[to_column.value]
         for row in _get_description_map_dicts()
@@ -35,16 +48,19 @@ def _get_description_map_dicts() -> Iterator[ColumnValues]:
     with rule_map_file.open("r") as f:
         reader = csv.DictReader(f, delimiter=",")
         fieldnames = set(reader.fieldnames)
-        expected_fieldnames = set(column.value for column in Columns)
+        expected_fieldnames = set(column.value for column in MappingRuleColumn)
 
         assert list(fieldnames) == list(expected_fieldnames)
         for row in reader:
             yield row
 
 
-def get_ignore_rules(type_: str) -> Set[str]:
+def get_ignore_rules(type_: IgnoredTransactionType) -> Set[str]:
     with ignored_transactions_file.open("r") as f:
         reader = csv.DictReader(f, delimiter=",")
-        assert list(reader.fieldnames) == EXPECTED_IGNORED_TRANSACTION_RULES
-        result = {row["description"] for row in reader if row["type"] == type_}
+        assert list(reader.fieldnames) == [
+            IgnoredTransactionColumn.type.value,
+            IgnoredTransactionColumn.description.value,
+        ]
+        result = {row["description"] for row in reader if row["type"] == type_.value}
     return result

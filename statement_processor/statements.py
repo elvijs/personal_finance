@@ -3,7 +3,7 @@ import datetime
 import logging
 from typing import Sequence
 
-from statement_processor.rules import get_ignore_rules
+from statement_processor.rules import IgnoredTransactionType, get_ignore_rules
 from statement_processor.transactions import ProcessedTransaction, Transaction
 
 logger = logging.getLogger("Statement reader")
@@ -45,8 +45,8 @@ class Statement:
 
 
 class SingleStatementReporter:
-    IGNORED_FULL_DESCRIPTIONS = get_ignore_rules("full")
-    IGNORED_PARTIAL_DESCRIPTIONS = get_ignore_rules("partial")
+    IGNORED_FULL_DESCRIPTIONS = get_ignore_rules(IgnoredTransactionType.full)
+    IGNORED_PARTIAL_DESCRIPTIONS = get_ignore_rules(IgnoredTransactionType.partial)
 
     def __init__(self, statement: Statement) -> None:
         self._statement = statement
