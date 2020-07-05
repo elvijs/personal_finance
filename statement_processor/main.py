@@ -5,12 +5,13 @@ into a uniform format.
 import datetime
 import glob
 import logging
-
-from dateutil.relativedelta import relativedelta
 from typing import Sequence
 
-from statement_processor.readers import SantanderBankStatementReader, RevolutStatementReader, \
-    SantanderCreditCardStatementReader
+from dateutil.relativedelta import relativedelta
+
+from statement_processor.readers import (RevolutStatementReader,
+                                         SantanderBankStatementReader,
+                                         SantanderCreditCardStatementReader)
 from statement_processor.statements import StatementReporter
 
 logger = logging.getLogger("Statement processing")
@@ -41,7 +42,9 @@ def get_last_month_name() -> str:
 
 
 def get_last_months_dir() -> str:
-    return THIS_MONTHS_PATH.format(year=get_last_months_year(), month=get_last_month_name())
+    return THIS_MONTHS_PATH.format(
+        year=get_last_months_year(), month=get_last_month_name()
+    )
 
 
 if __name__ == "__main__":
@@ -60,8 +63,9 @@ if __name__ == "__main__":
     try:
         revolut_path = get_revolut_statement_path(last_months_dir)[0]
     except IndexError:
-        raise IndexError('No Revolut statement found, please upload to '\
-                        '{}'.format(last_months_dir))
+        raise IndexError(
+            "No Revolut statement found, please upload to " "{}".format(last_months_dir)
+        )
     revolut_statement = RevolutStatementReader(revolut_path).get_statement()
     statements.append(revolut_statement)
 

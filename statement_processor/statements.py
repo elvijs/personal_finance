@@ -1,19 +1,22 @@
 import csv
 import datetime
 import logging
-
 from typing import Sequence
 
 from statement_processor.rules import get_ignore_rules
-from statement_processor.transactions import Transaction, ProcessedTransaction
+from statement_processor.transactions import ProcessedTransaction, Transaction
 
 logger = logging.getLogger("Statement reader")
 
 
 class Statement:
-    def __init__(self, from_date: datetime.date, to_date: datetime.date,
-                 account_number: str,
-                 transactions: Sequence[Transaction]) -> None:
+    def __init__(
+        self,
+        from_date: datetime.date,
+        to_date: datetime.date,
+        account_number: str,
+        transactions: Sequence[Transaction],
+    ) -> None:
         self._from_date = from_date
         self._to_date = to_date
         self._account_number = account_number
@@ -36,9 +39,9 @@ class Statement:
         return self._transactions
 
     def __str__(self) -> str:
-        return "Statement from {} to {} for account "\
-               "{}\n{}".format(self.from_date, self.to_date,
-                               self.account_number, self.transactions)
+        return "Statement from {} to {} for account " "{}\n{}".format(
+            self.from_date, self.to_date, self.account_number, self.transactions
+        )
 
 
 class SingleStatementReporter:
@@ -57,9 +60,11 @@ class SingleStatementReporter:
 
             ret.append(
                 ProcessedTransaction(
-                    transaction.date, transaction.description,
-                    transaction.amount, transaction.balance,
-                    transaction.bank_category
+                    transaction.date,
+                    transaction.description,
+                    transaction.amount,
+                    transaction.balance,
+                    transaction.bank_category,
                 )
             )
         return ret
@@ -93,8 +98,8 @@ class StatementReporter:
             raise Exception("No transactions")
 
         fieldnames = processed_transactions[0].as_ordered_dict().keys()
-        
-        with open(path, 'w') as outfile:
+
+        with open(path, "w") as outfile:
             writer = csv.DictWriter(outfile, fieldnames=fieldnames)
             writer.writeheader()
             for transaction in processed_transactions:
@@ -108,7 +113,11 @@ class StatementReporter:
         to_date = self._statements[0].to_date
 
         for statement in self._statements[1:-1]:
-            s_msg = "Expected statement start: {}, got: {}".format(from_date, statement.from_date)
+            s_msg = "Expected statement start: {}, got: {}".format(
+                from_date, statement.from_date
+            )
             assert from_date == statement.from_date, s_msg
-            e_msg = "Expected statement end: {}, got: {}".format(from_date, statement.from_date)
+            e_msg = "Expected statement end: {}, got: {}".format(
+                from_date, statement.from_date
+            )
             assert to_date == statement.to_date, e_msg

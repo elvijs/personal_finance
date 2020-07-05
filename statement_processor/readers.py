@@ -4,16 +4,14 @@ import decimal
 import enum
 import re
 import unicodedata
-
 from abc import ABC, abstractmethod
 from collections import OrderedDict
-from typing import Tuple, Union, Sequence, Optional, IO
+from typing import IO, Optional, Sequence, Tuple, Union
 
 from dateutil.relativedelta import relativedelta
 
 from statement_processor.statements import Statement
 from statement_processor.transactions import Transaction
-
 
 FromToValue = Tuple[datetime.date, datetime.date]
 AccountValue = str
@@ -23,12 +21,7 @@ AmountValue = decimal.Decimal
 BalanceValue = decimal.Decimal
 
 ParsedValue = Union[
-    FromToValue,
-    AccountValue,
-    DateValue,
-    DescriptionValue,
-    AmountValue,
-    BalanceValue,
+    FromToValue, AccountValue, DateValue, DescriptionValue, AmountValue, BalanceValue,
 ]
 
 StartEnd = Tuple[datetime.date, datetime.date]
@@ -36,12 +29,14 @@ StartEnd = Tuple[datetime.date, datetime.date]
 
 class InputFileTokens(enum.Enum):
     """ Tokens found in Santander TXT versions of statements """
+
     FromTo = "From"
     Account = "Account"
     Date = "Date"
     Description = "Description"
     Amount = "Amount"
     Balance = "Balance"
+
 
 TokenizedLine = Tuple[InputFileTokens, ParsedValue]
 
@@ -70,7 +65,7 @@ class StatementReader(ABC):
         try:
             return decimal.Decimal(self._normalize(value).strip())
         except decimal.InvalidOperation:
-            return decimal.Decimal(self._normalize(value.replace(',', '')).strip())
+            return decimal.Decimal(self._normalize(value.replace(",", "")).strip())
 
 
 class SantanderBankStatementReader(StatementReader):
@@ -79,8 +74,8 @@ class SantanderBankStatementReader(StatementReader):
     SUPERFLUOUS_CHARACTERS = "/t/n"
     DATE_FORMAT = "%d/%m/%Y"
     DATE_SPLITTER = "to"
-    
-    def __init__(self, path: str, encoding: str=None) -> None:
+
+    def __init__(self, path: str, encoding: str = None) -> None:
         self._path = path  # TODO: validate path
         self._encoding = encoding or self.ENCODING
 
@@ -96,15 +91,14 @@ class SantanderBankStatementReader(StatementReader):
 
         transactions = []
         for i in range(2, len(tokenized_lines), 4):
-            date, description, amount, balance = tokenized_lines[i:i+4]
-            transaction = Transaction(date[1], description[1],
-                                      -amount[1], balance[1])
+            date, description, amount, balance = tokenized_lines[i : i + 4]
+            transaction = Transaction(date[1], description[1], -amount[1], balance[1])
             transactions.append(transaction)
 
         return Statement(from_date, to_date, account, transactions)
 
     def _get_tokenized_and_parsed_lines(self) -> Sequence[TokenizedLine]:
-        with open(self._path, 'r', encoding=self._encoding) as input_file:
+        with open(self._path, "r", encoding=self._encoding) as input_file:
             tokenized_and_parsed_lines = []
             for line in input_file:
                 token, raw_value = self._tokenize_line(line)
@@ -119,7 +113,7 @@ class SantanderBankStatementReader(StatementReader):
         split_line = line.split(self.TOKEN_SEPARATOR)
         if len(split_line) <= 1:
             return None, None
-        
+
         for potential_token in InputFileTokens:
             if potential_token.value == split_line[0]:
                 return potential_token, ":".join(split_line[1:])
@@ -128,8 +122,7 @@ class SantanderBankStatementReader(StatementReader):
         # TODO: specialize the exception
 
     # TODO: types can be made stricter via typing.overload decorator
-    def _parse_value(self, token: InputFileTokens,
-                     raw_value: str) -> ParsedValue:
+    def _parse_value(self, token: InputFileTokens, raw_value: str) -> ParsedValue:
         if token == InputFileTokens.FromTo:
             return self._parse_from_to_token(raw_value)
         elif token == InputFileTokens.Account:
@@ -143,30 +136,30 @@ class SantanderBankStatementReader(StatementReader):
         elif token == InputFileTokens.Balance:
             return self._parse_decimal(raw_value)
         else:
-            raise Exception("Could not parse token {} with "
-                            "value {}".format(token, raw_value))
+            raise Exception(
+                "Could not parse token {} with " "value {}".format(token, raw_value)
+            )
         # TODO: specialize the exception
-        
+
     def _parse_from_to_token(self, raw_value: str) -> FromToValue:
         normalized_value = self._normalize(raw_value)
         value = re.sub("\s", "", normalized_value)
 
         date_strings = value.split(self.DATE_SPLITTER)
-        return (self._parse_date(date_strings[0]),
-                self._parse_date(date_strings[1]))
+        return (self._parse_date(date_strings[0]), self._parse_date(date_strings[1]))
 
 
 class RevolutStatementReader(StatementReader):
     ENCODING = "utf-8"
     DELIMITER = ";"
     DATE_FORMAT = "%d %b %Y"
-    
-    def __init__(self, path: str, encoding: str=None) -> None:
+
+    def __init__(self, path: str, encoding: str = None) -> None:
         self._path = path  # TODO: validate path
         self._encoding = encoding or self.ENCODING
 
     def get_statement(self) -> Statement:
-        with open(self._path, 'r', encoding=self._encoding) as input_file:
+        with open(self._path, "r", encoding=self._encoding) as input_file:
             reader = csv.DictReader(input_file, delimiter=self.DELIMITER)
 
             transactions = []
@@ -217,14 +210,14 @@ class SantanderCreditCardStatementReader(StatementReader):
 
     def _filtered_input(self) -> IO[str]:
         """ Deal with Santander file messiness. """
-        with open(self._path, 'r', encoding=self._encoding) as input_file:
+        with open(self._path, "r", encoding=self._encoding) as input_file:
             for i, row in enumerate(input_file):
                 if i == 0:
                     card_num = row[-5:-1]
                     msg = "unexpected card number: {}".format(card_num)
                     assert card_num == self.CARD_NUMBER_LAST_DIGITS, msg
                     continue  # skip over the first row
-                elif re.sub('-', '', row) in ['\n', '']:
+                elif re.sub("-", "", row) in ["\n", ""]:
                     continue  # skip over a delimiting row
 
                 # Cleanup their ridiculous whitespace usage
@@ -245,12 +238,16 @@ class SantanderCreditCardStatementReader(StatementReader):
             try:
                 transaction = self._create_transaction(row)
             except Exception as ex:
-                print('Issue creating a transaction from row: {}'.format(row))
+                print("Issue creating a transaction from row: {}".format(row))
                 raise ex
             if from_date <= transaction.date <= to_date:
                 transactions.append(transaction)
             else:
-                print("Credit card transaction from a different period: {}".format(transaction))
+                print(
+                    "Credit card transaction from a different period: {}".format(
+                        transaction
+                    )
+                )
 
         return Statement(from_date, to_date, "Santander credit card", transactions)
 
@@ -267,6 +264,7 @@ class SantanderCreditCardStatementReader(StatementReader):
             date=self._parse_date(row["Date"]),
             description=self._clean_description(row["Description"]),
             amount=-self._parse_decimal(row["Money in"])
-                if row["Money in"] else self._parse_decimal(row["Money out"]),
+            if row["Money in"]
+            else self._parse_decimal(row["Money out"]),
             balance=None,
         )

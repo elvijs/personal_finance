@@ -25,7 +25,7 @@ lint = "flake8 --max-line-length 88 statement_processor"
 format = "task black && task isort"
 check_format = "task black --check && task isort --diff"
 black = "black statement_processor"
-isort = "isort --atomic statement_processor/**/*.py"
+isort = "isort --atomic statement_processor/*.py"
 
 process_statements = "python -m statement_processor.main"
 
