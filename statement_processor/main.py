@@ -28,7 +28,11 @@ def get_santander_credit_card_statement_paths(at_path: str) -> Sequence[str]:
 
 
 def get_revolut_statement_path(at_path: str) -> str:
-    return glob.glob(at_path + "Revolut*")
+    all_matches = glob.glob(at_path + "Revolut*")
+    assert len(all_matches) == 1, \
+        f"Expected to find precisely one Revolut statement, " \
+        f"instead got {len(all_matches)}: {all_matches}"
+    return all_matches[0]
 
 
 def get_last_months_year() -> str:
@@ -61,7 +65,7 @@ if __name__ == "__main__":
     ]
 
     try:
-        revolut_path = get_revolut_statement_path(last_months_dir)[0]
+        revolut_path = get_revolut_statement_path(last_months_dir)
     except IndexError:
         raise IndexError(
             "No Revolut statement found, please upload to " "{}".format(last_months_dir)
