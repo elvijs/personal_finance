@@ -3,6 +3,7 @@ A few simple scripts to manipulate bank and credit card statements
 into a uniform format.
 """
 import datetime
+import getpass
 import glob
 import logging
 from typing import Sequence
@@ -16,7 +17,8 @@ from statement_processor.statements import StatementReporter
 
 logger = logging.getLogger("Statement processing")
 
-THIS_MONTHS_PATH = "/home/elvijs/Documents/finances/{year}/{month}/"
+user = getpass.getuser()
+THIS_MONTHS_PATH = "/home/{}/Documents/finances/".format(user) + "{year}/{month}/"
 
 
 def get_santander_bank_account_paths(at_path: str) -> Sequence[str]:
