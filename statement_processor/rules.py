@@ -2,7 +2,7 @@ import csv
 import os
 from enum import Enum
 from pathlib import Path
-from typing import Iterator, Mapping, Set, Optional
+from typing import Iterator, Mapping, Optional, Set
 
 _this_file = os.path.realpath(__file__)
 _rules_dir = os.environ.get("RULES_DIR")
@@ -11,10 +11,11 @@ if not _rules_dir:
 else:
     _rules_dir = Path(_rules_dir)
 
-assert _rules_dir.exists(), \
-    f"{_rules_dir} does not exist. " \
-    f"Please provide a 'mapping.csv' and 'ignored_transactions.csv' at this location" \
+assert _rules_dir.exists(), (
+    f"{_rules_dir} does not exist. "
+    f"Please provide a 'mapping.csv' and 'ignored_transactions.csv' at this location"
     f"or set the RULES_DIR environment variable"
+)
 
 rule_map_file = _rules_dir / "mappings.csv"
 ignored_transactions_file = _rules_dir / "ignored_transactions.csv"
@@ -68,8 +69,9 @@ def _get_description_map_dicts() -> Iterator[ColumnValues]:
 def get_ignore_rules(type_: IgnoredTransactionType) -> Set[str]:
     with ignored_transactions_file.open("r") as f:
         reader = csv.DictReader(f, delimiter=",")
-        assert reader.fieldnames, \
-            f"Expected the ignore rules map to have column headers"
+        assert (
+            reader.fieldnames
+        ), f"Expected the ignore rules map to have column headers"
 
         assert list(reader.fieldnames) == [
             IgnoredTransactionColumn.type.value,

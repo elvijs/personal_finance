@@ -1,7 +1,7 @@
 import csv
 import datetime
 import logging
-from typing import Sequence, List
+from typing import List, Sequence
 
 from statement_processor.rules import IgnoredTransactionType, get_ignore_rules
 from statement_processor.transactions import ProcessedTransaction, Transaction

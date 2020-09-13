@@ -31,9 +31,10 @@ def get_santander_credit_card_statement_paths(at_path: str) -> Sequence[str]:
 
 def get_revolut_statement_path(at_path: str) -> str:
     all_matches = glob.glob(at_path + "Revolut*")
-    assert len(all_matches) == 1, \
-        f"Expected to find precisely one Revolut statement, " \
+    assert len(all_matches) == 1, (
+        f"Expected to find precisely one Revolut statement, "
         f"instead got {len(all_matches)}: {all_matches}"
+    )
     return all_matches[0]
 
 
