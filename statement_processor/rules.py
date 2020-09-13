@@ -5,10 +5,19 @@ from pathlib import Path
 from typing import Iterator, Mapping, Set, Optional
 
 _this_file = os.path.realpath(__file__)
-rule_map_file = Path(_this_file).parent.parent / "rules/mappings.csv"
-ignored_transactions_file = (
-    Path(_this_file).parent.parent / "rules/ignored_transactions.csv"
-)
+_rules_dir = os.environ.get("RULES_DIR")
+if not _rules_dir:
+    _rules_dir = Path(_this_file).parent.parent / "rules"
+else:
+    _rules_dir = Path(_rules_dir)
+
+assert _rules_dir.exists(), \
+    f"{_rules_dir} does not exist. " \
+    f"Please provide a 'mapping.csv' and 'ignored_transactions.csv' at this location" \
+    f"or set the RULES_DIR environment variable"
+
+rule_map_file = _rules_dir / "mappings.csv"
+ignored_transactions_file = _rules_dir / "ignored_transactions.csv"
 
 
 class IgnoredTransactionColumn(Enum):
