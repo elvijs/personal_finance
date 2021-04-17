@@ -6,6 +6,7 @@ import datetime
 import getpass
 import glob
 import logging
+import pathlib
 from typing import Sequence
 
 from dateutil.relativedelta import relativedelta
@@ -19,6 +20,7 @@ logger = logging.getLogger("Statement processing")
 
 user = getpass.getuser()
 THIS_MONTHS_PATH = "/home/{}/Documents/finances/".format(user) + "{year}/{month}/"
+THIS_MONTHS_PATH_MAC = "/Users/{}/Documents/finances/".format(user) + "{year}/{month}/"
 
 
 def get_santander_bank_account_paths(at_path: str) -> Sequence[str]:
@@ -32,7 +34,7 @@ def get_santander_credit_card_statement_paths(at_path: str) -> Sequence[str]:
 def get_revolut_statement_path(at_path: str) -> str:
     all_matches = glob.glob(at_path + "Revolut*")
     assert len(all_matches) == 1, (
-        f"Expected to find precisely one Revolut statement, "
+        f"Expected to find precisely one Revolut statement at {at_path}, "
         f"instead got {len(all_matches)}: {all_matches}"
     )
     return all_matches[0]
@@ -49,9 +51,24 @@ def get_last_month_name() -> str:
 
 
 def get_last_months_dir() -> str:
-    return THIS_MONTHS_PATH.format(
-        year=get_last_months_year(), month=get_last_month_name()
-    )
+    candidate_dirs = [
+        THIS_MONTHS_PATH,
+        THIS_MONTHS_PATH_MAC
+    ]
+    attempted_dirs = []
+
+    for candidate_dir in candidate_dirs:
+        formatted_dir = candidate_dir.format(
+            year=get_last_months_year(),
+            month=get_last_month_name(),
+        )
+
+        attempted_dirs.append(formatted_dir)
+
+        if pathlib.Path(formatted_dir).exists():
+            return formatted_dir
+
+    raise FileNotFoundError(f"None of the following locations exist: {attempted_dirs}")
 
 
 if __name__ == "__main__":
