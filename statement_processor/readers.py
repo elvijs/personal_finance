@@ -59,7 +59,11 @@ class StatementReader(ABC):
 
     @staticmethod
     def _normalize(raw_value: str) -> str:
-        return unicodedata.normalize("NFKD", raw_value).strip()
+        try:
+            return unicodedata.normalize("NFKD", raw_value).strip()
+        except TypeError:
+            # TODO: log error
+            return raw_value
 
     def _parse_decimal(self, value: str) -> decimal.Decimal:
         try:
@@ -151,7 +155,7 @@ class SantanderBankStatementReader(StatementReader):
 
 class RevolutStatementReader(StatementReader):
     ENCODING = "utf-8"
-    DELIMITER = ";"
+    DELIMITER = ","
     DATE_FORMAT = "%d %b %Y"
 
     def __init__(self, path: str, encoding: str = None) -> None:
