@@ -155,7 +155,7 @@ class SantanderBankStatementReader(StatementReader):
 
 class RevolutStatementReader(StatementReader):
     ENCODING = "utf-8"
-    DELIMITER = ","
+    DELIMITER = ";"
     DATE_FORMAT = "%d %b %Y"
 
     def __init__(self, path: str, encoding: str = None) -> None:
@@ -178,7 +178,7 @@ class RevolutStatementReader(StatementReader):
         row = self._normalize_row(row)
         # TODO: move column names into an enum
         date = self._parse_date(row["Completed Date"])
-        description = self._normalize(row["Description"])
+        description = self._normalize(row.get("Description", row["Reference"]))
         amount = self._get_amount(row)
         balance = self._parse_decimal(row["Balance (GBP)"])
         bank_category = self._normalize(row["Category"])
