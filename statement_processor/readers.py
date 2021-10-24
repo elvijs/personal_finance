@@ -150,12 +150,12 @@ class SantanderBankStatementReader(StatementReader):
         value = re.sub("\s", "", normalized_value)
 
         date_strings = value.split(self.DATE_SPLITTER)
-        return (self._parse_date(date_strings[0]), self._parse_date(date_strings[1]))
+        return self._parse_date(date_strings[0]), self._parse_date(date_strings[1])
 
 
 class RevolutStatementReader(StatementReader):
     ENCODING = "utf-8"
-    DELIMITER = ";"
+    DELIMITERS = [";", ","]
     DATE_FORMAT = "%d %b %Y"
 
     def __init__(self, path: str, encoding: str = None) -> None:
@@ -163,8 +163,19 @@ class RevolutStatementReader(StatementReader):
         self._encoding = encoding or self.ENCODING
 
     def get_statement(self) -> Statement:
+        ex = Exception("Could not read the statement")
+
+        for delimiter in self.DELIMITERS:
+            try:
+                return self._get_statement_with_delimiter(delimiter)
+            except KeyError as ex:  # the wrong delimiter will result in one column
+                continue
+
+        raise ex
+
+    def _get_statement_with_delimiter(self, delimiter: str) -> Statement:
         with open(self._path, "r", encoding=self._encoding) as input_file:
-            reader = csv.DictReader(input_file, delimiter=self.DELIMITER)
+            reader = csv.DictReader(input_file, delimiter=delimiter)
 
             transactions = []
             for row in reader:
