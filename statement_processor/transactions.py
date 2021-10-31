@@ -13,7 +13,7 @@ class Transaction:
         date: datetime.date,
         description: str,
         amount: decimal.Decimal,
-        balance: decimal.Decimal,
+        balance: Optional[decimal.Decimal],
         bank_category: Optional[str] = None,
     ) -> None:
         self._date = date
@@ -35,7 +35,7 @@ class Transaction:
         return self._amount
 
     @property
-    def balance(self) -> decimal.Decimal:
+    def balance(self) -> Optional[decimal.Decimal]:
         return self._balance
 
     @property
