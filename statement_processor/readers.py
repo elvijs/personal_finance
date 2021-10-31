@@ -2,6 +2,7 @@ import csv
 import datetime
 import decimal
 import enum
+import logging
 import re
 import unicodedata
 from abc import ABC, abstractmethod
@@ -54,15 +55,24 @@ class StatementReader(ABC):
         end = start + relativedelta(months=1, days=-1)
         return start.date(), end.date()
 
-    def _parse_date(self, date: str) -> datetime.date:
-        return datetime.datetime.strptime(date, self.DATE_FORMAT).date()
+    def _parse_date(self, date: str, supported_formats: Sequence[str]) -> datetime.date:
+        for potential_format in supported_formats:
+            try:
+                return datetime.datetime.strptime(date, potential_format).date()
+            except ValueError:
+                continue
+
+        raise ValueError(
+            f"Date {date} does not match any of "
+            f"the expected formats: {supported_formats}",
+        )
 
     @staticmethod
     def _normalize(raw_value: str) -> str:
         try:
             return unicodedata.normalize("NFKD", raw_value).strip()
         except TypeError:
-            # TODO: log error
+            # TODO: log errors?
             return raw_value
 
     def _parse_decimal(self, value: str) -> decimal.Decimal:
@@ -76,7 +86,7 @@ class SantanderBankStatementReader(StatementReader):
     ENCODING = "iso-8859-15"
     TOKEN_SEPARATOR = ":"
     SUPERFLUOUS_CHARACTERS = "/t/n"
-    DATE_FORMAT = "%d/%m/%Y"
+    DATE_FORMATS = ["%d/%m/%Y"]
     DATE_SPLITTER = "to"
 
     def __init__(self, path: str, encoding: str = None) -> None:
@@ -132,7 +142,7 @@ class SantanderBankStatementReader(StatementReader):
         elif token == InputFileTokens.Account:
             return self._normalize(raw_value)
         elif token == InputFileTokens.Date:
-            return self._parse_date(self._normalize(raw_value))
+            return self._parse_date(self._normalize(raw_value), supported_formats=self.DATE_FORMATS)
         elif token == InputFileTokens.Description:
             return self._normalize(raw_value)
         elif token == InputFileTokens.Amount:
@@ -150,28 +160,35 @@ class SantanderBankStatementReader(StatementReader):
         value = re.sub("\s", "", normalized_value)
 
         date_strings = value.split(self.DATE_SPLITTER)
-        return self._parse_date(date_strings[0]), self._parse_date(date_strings[1])
+        return (
+            self._parse_date(date_strings[0], supported_formats=self.DATE_FORMATS),
+            self._parse_date(date_strings[1], supported_formats=self.DATE_FORMATS),
+        )
 
 
 class RevolutStatementReader(StatementReader):
     ENCODING = "utf-8"
     DELIMITERS = [";", ","]
-    DATE_FORMAT = "%d %b %Y"
+    DATE_FORMATS = ["%d %b %Y", "%Y-%m-%d %H:%M:%S"]
 
     def __init__(self, path: str, encoding: str = None) -> None:
         self._path = path  # TODO: validate path
         self._encoding = encoding or self.ENCODING
 
     def get_statement(self) -> Statement:
-        ex = Exception("Could not read the statement")
+        caught_exceptions = []
 
         for delimiter in self.DELIMITERS:
             try:
                 return self._get_statement_with_delimiter(delimiter)
             except KeyError as ex:  # the wrong delimiter will result in one column
+                caught_exceptions.append(ex)
                 continue
 
-        raise ex
+        raise Exception(
+            f"Could not read the statement. "
+            f"Caught the following exceptions: {caught_exceptions}"
+        )
 
     def _get_statement_with_delimiter(self, delimiter: str) -> Statement:
         with open(self._path, "r", encoding=self._encoding) as input_file:
@@ -188,17 +205,20 @@ class RevolutStatementReader(StatementReader):
     def _create_transaction(self, row: OrderedDict) -> Transaction:
         row = self._normalize_row(row)
         # TODO: move column names into an enum
-        date = self._parse_date(row["Completed Date"])
-        description = self._normalize(row.get("Description", row["Reference"]))
+        date = self._parse_date(row["Completed Date"], supported_formats=self.DATE_FORMATS)
+        raw_description = row.get("Description", row.get("Reference", None))
+        description = self._normalize(raw_description)
         amount = self._get_amount(row)
-        balance = self._parse_decimal(row["Balance (GBP)"])
-        bank_category = self._normalize(row["Category"])
+        balance = self._parse_decimal(row.get("Balance (GBP)", row.get("Balance", None)))
+        bank_category = self._normalize(row.get("Category", None))
         return Transaction(date, description, amount, balance, bank_category)
 
     def _get_amount(self, row: OrderedDict) -> decimal.Decimal:
         # TODO: column names should be in an enum
-        if row["Paid Out (GBP)"]:
+        if row.get("Paid Out (GBP)"):
             return self._parse_decimal(row["Paid Out (GBP)"])
+        elif row.get("Amount"):
+            return -self._parse_decimal(row["Amount"])
         else:
             return -self._parse_decimal(row["Paid In (GBP)"])
 
@@ -216,7 +236,7 @@ def _print_tabs(s: str):
 class SantanderCreditCardStatementReader(StatementReader):
     ENCODING = "utf-8"
     DELIMITER = "\t"
-    DATE_FORMAT = "%Y-%m-%d"
+    DATE_FORMATS = ["%Y-%m-%d"]
     CARD_NUMBER_LAST_DIGITS = "9976"  # for validation
 
     def __init__(self, path: str, encoding: str = None) -> None:
@@ -276,7 +296,7 @@ class SantanderCreditCardStatementReader(StatementReader):
             assert card_num == self.CARD_NUMBER_LAST_DIGITS, msg
 
         return Transaction(
-            date=self._parse_date(row["Date"]),
+            date=self._parse_date(row["Date"], supported_formats=self.DATE_FORMATS),
             description=self._clean_description(row["Description"]),
             amount=-self._parse_decimal(row["Money in"])
             if row["Money in"]
