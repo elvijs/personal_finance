@@ -205,11 +205,13 @@ class RevolutStatementReader(StatementReader):
     def _create_transaction(self, row: OrderedDict) -> Transaction:
         row = self._normalize_row(row)
         # TODO: move column names into an enum
-        date = self._parse_date(row["Completed Date"], supported_formats=self.DATE_FORMATS)
+        raw_date = row["Completed Date"] if row["Completed Date"] else row["Started Date"]
+        date = self._parse_date(raw_date, supported_formats=self.DATE_FORMATS)
         raw_description = row.get("Description", row.get("Reference", None))
         description = self._normalize(raw_description)
         amount = self._get_amount(row)
-        balance = self._parse_decimal(row.get("Balance (GBP)", row.get("Balance", None)))
+        raw_balance = row.get("Balance (GBP)", row.get("Balance", None))
+        balance = self._parse_decimal(raw_balance) if raw_balance else None
         bank_category = self._normalize(row.get("Category", None))
         return Transaction(date, description, amount, balance, bank_category)
 
