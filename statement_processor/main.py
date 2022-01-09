@@ -95,3 +95,4 @@ if __name__ == "__main__":
 
     report_path = last_months_dir + "report.csv"
     StatementReporter(*statements).store_report_to_csv(report_path)
+    print(f"Report stored to {report_path}")
