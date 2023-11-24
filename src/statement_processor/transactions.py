@@ -113,7 +113,7 @@ class ProcessedTransaction(Transaction):
         return self._is_household_expense()
 
     def as_ordered_dict(self) -> OrderedDict:
-        """ Omit balance from the view. """
+        """Omit balance from the view."""
         if isinstance(self.is_household_expense, bool):
             is_household_expense = "Yes" if self._is_household_expense() else "No"
         else:
@@ -173,6 +173,9 @@ class ProcessedTransaction(Transaction):
             return None
 
     def __str__(self) -> str:
-        return super().__str__() + ". Category: {}, subcategory: {}, " "household expense: {}".format(
-            self.category, self.sub_category, self.is_household_expense
+        return (
+            super().__str__()
+            + ". Category: {}, subcategory: {}, " "household expense: {}".format(
+                self.category, self.sub_category, self.is_household_expense
+            )
         )

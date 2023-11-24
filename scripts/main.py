@@ -11,9 +11,11 @@ from typing import Sequence
 
 from dateutil.relativedelta import relativedelta
 
-from statement_processor.readers import (RevolutStatementReader,
-                                         SantanderBankStatementReader,
-                                         SantanderCreditCardStatementReader)
+from statement_processor.readers import (
+    RevolutStatementReader,
+    SantanderBankStatementReader,
+    SantanderCreditCardStatementReader,
+)
 from statement_processor.statements import StatementReporter
 
 logger = logging.getLogger("Statement processing")
@@ -51,10 +53,7 @@ def get_last_month_name() -> str:
 
 
 def get_last_months_dir() -> str:
-    candidate_dirs = [
-        THIS_MONTHS_PATH,
-        THIS_MONTHS_PATH_MAC
-    ]
+    candidate_dirs = [THIS_MONTHS_PATH, THIS_MONTHS_PATH_MAC]
     attempted_dirs = []
 
     for candidate_dir in candidate_dirs:

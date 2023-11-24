@@ -2,7 +2,6 @@ import csv
 import datetime
 import decimal
 import enum
-import logging
 import re
 import unicodedata
 from abc import ABC, abstractmethod
@@ -22,14 +21,19 @@ AmountValue = decimal.Decimal
 BalanceValue = decimal.Decimal
 
 ParsedValue = Union[
-    FromToValue, AccountValue, DateValue, DescriptionValue, AmountValue, BalanceValue,
+    FromToValue,
+    AccountValue,
+    DateValue,
+    DescriptionValue,
+    AmountValue,
+    BalanceValue,
 ]
 
 StartEnd = Tuple[datetime.date, datetime.date]
 
 
 class InputFileTokens(enum.Enum):
-    """ Tokens found in Santander TXT versions of statements """
+    """Tokens found in Santander TXT versions of statements"""
 
     FromTo = "From"
     Account = "Account"
@@ -45,10 +49,10 @@ TokenizedLine = Tuple[InputFileTokens, ParsedValue]
 class StatementReader(ABC):
     @abstractmethod
     def get_statement(self) -> Statement:
-        """ Get a statement representing the file's contents """
+        """Get a statement representing the file's contents"""
 
     def _get_statement_start_and_end(self, path: str) -> StartEnd:
-        """ Deconstruct the path to provide the statement start and end. """
+        """Deconstruct the path to provide the statement start and end."""
         matches = re.search(r"/[0-9]{4}/[a-zA-Z]{3,9}/", path)
         start = datetime.datetime.strptime(matches.group(0), "/%Y/%B/")
         # strptime defaults to the first day of month
@@ -132,8 +136,7 @@ class SantanderBankStatementReader(StatementReader):
             if potential_token.value == split_line[0]:
                 return potential_token, ":".join(split_line[1:])
 
-        raise Exception("Unexpected token on line: {}".format(line))
-        # TODO: specialize the exception
+        raise ValueError("Unexpected token on line: {}".format(line))
 
     # TODO: types can be made stricter via typing.overload decorator
     def _parse_value(self, token: InputFileTokens, raw_value: str) -> ParsedValue:
@@ -142,7 +145,9 @@ class SantanderBankStatementReader(StatementReader):
         elif token == InputFileTokens.Account:
             return self._normalize(raw_value)
         elif token == InputFileTokens.Date:
-            return self._parse_date(self._normalize(raw_value), supported_formats=self.DATE_FORMATS)
+            return self._parse_date(
+                self._normalize(raw_value), supported_formats=self.DATE_FORMATS
+            )
         elif token == InputFileTokens.Description:
             return self._normalize(raw_value)
         elif token == InputFileTokens.Amount:
@@ -150,14 +155,11 @@ class SantanderBankStatementReader(StatementReader):
         elif token == InputFileTokens.Balance:
             return self._parse_decimal(raw_value)
         else:
-            raise Exception(
-                "Could not parse token {} with " "value {}".format(token, raw_value)
-            )
-        # TODO: specialize the exception
+            raise ValueError(f"Could not parse token {token} with value {raw_value}")
 
     def _parse_from_to_token(self, raw_value: str) -> FromToValue:
         normalized_value = self._normalize(raw_value)
-        value = re.sub("\s", "", normalized_value)
+        value = re.sub(r"\s", "", normalized_value)
 
         date_strings = value.split(self.DATE_SPLITTER)
         return (
@@ -205,7 +207,9 @@ class RevolutStatementReader(StatementReader):
     def _create_transaction(self, row: OrderedDict) -> Transaction:
         row = self._normalize_row(row)
         # TODO: move column names into an enum
-        raw_date = row["Completed Date"] if row["Completed Date"] else row["Started Date"]
+        raw_date = (
+            row["Completed Date"] if row["Completed Date"] else row["Started Date"]
+        )
         date = self._parse_date(raw_date, supported_formats=self.DATE_FORMATS)
         raw_description = row.get("Description", row.get("Reference", None))
         description = self._normalize(raw_description)
@@ -246,7 +250,7 @@ class SantanderCreditCardStatementReader(StatementReader):
         self._encoding = encoding or self.ENCODING
 
     def _filtered_input(self) -> IO[str]:
-        """ Deal with Santander file messiness. """
+        """Deal with Santander file messiness."""
         with open(self._path, "r", encoding=self._encoding) as input_file:
             for i, row in enumerate(input_file):
                 if i == 0:
