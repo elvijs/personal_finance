@@ -11,11 +11,11 @@ if not _rules_dir:
 else:
     _rules_dir = Path(_rules_dir)
 
-assert _rules_dir.exists(), (
-    f"{_rules_dir} does not exist. "
-    f"Please provide a 'mapping.csv' and 'ignored_transactions.csv' at this location"
-    f"or set the RULES_DIR environment variable"
-)
+# assert _rules_dir.exists(), (
+#     f"{_rules_dir} does not exist. "
+#     f"Please provide a 'mapping.csv' and 'ignored_transactions.csv' at this location"
+#     f"or set the RULES_DIR environment variable"
+# )
 
 rule_map_file = _rules_dir / "mappings.csv"
 ignored_transactions_file = _rules_dir / "ignored_transactions.csv"
