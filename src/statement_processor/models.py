@@ -1,5 +1,6 @@
 import dataclasses
 import datetime
+from typing import Sequence, Optional
 
 
 @dataclasses.dataclass(frozen=True)
@@ -8,6 +9,23 @@ class Transaction:
     description: str
     amount: float
     account_id: str
+    inserted_on: Optional[datetime.datetime] = None
+
+    def similar(self, other: "Transaction") -> bool:
+        return (
+            self.date == other.date
+            and self.description == other.description
+            and self.amount == other.amount
+            and self.account_id == other.account_id
+        )
+
+
+@dataclasses.dataclass
+class Statement:
+    from_date: datetime.date
+    to_date: datetime.date
+    account_id: str
+    transactions: Sequence[Transaction]
 
 
 # class ProcessedTransaction(Transaction):

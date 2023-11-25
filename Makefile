@@ -6,8 +6,18 @@ install: install_deps
 install_deps:
 	pip install -r requirements.txt
 
-static_checks:
+
+static_checks: lint type_check
+
+type_check:
+	mypy .
+
+lint:
 	ruff check .
+
+
+lint_fix:
+	ruff check --fix .
 
 
 format:

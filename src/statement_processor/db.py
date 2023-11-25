@@ -1,12 +1,14 @@
-from datetime import date
+import logging
+from datetime import date, datetime
 from typing import Sequence, Tuple
 from pathlib import Path
 import sqlite3
 
-from statement_processor.transactions import Transaction
+from statement_processor.models import Transaction
 
 _DEFAULT_DB = Path(__file__).parent.parent.parent / "data" / "finance.db"
 SCHEMA = Path(__file__).parent / "schema.sql"
+LOG = logging.getLogger(__file__)
 
 
 class FinDB:
@@ -19,29 +21,43 @@ class FinDB:
         cursor.executescript(schema_sql)
         self._conn.commit()
 
-    def insert_transaction(self, transaction: Transaction) -> None:
+    def insert_transaction(
+        self, transaction: Transaction, ignore_duplicates: bool = False
+    ) -> None:
         cursor = self._conn.cursor()
-        cursor.execute(
-            """
+        try:
+            cursor.execute(
+                """
             INSERT INTO transactions (date, description, amount, account_id)
             VALUES (?, ?, ?, ?)
             """,
-            (
-                transaction.date.isoformat(),
-                transaction.description,
-                transaction.amount,
-                transaction.account_id,
-            ),
-        )
-        self._conn.commit()
+                (
+                    transaction.date.isoformat(),
+                    transaction.description,
+                    transaction.amount,
+                    transaction.account_id,
+                ),
+            )
+            self._conn.commit()
+        except sqlite3.IntegrityError as err:
+            if ignore_duplicates:
+                LOG.debug(f"Transaction already in DB: {transaction}, skipping")
+            else:
+                raise err
 
     def get_transactions(self) -> Sequence[Transaction]:
         cursor = self._conn.cursor()
         cursor.execute("SELECT * FROM transactions")
         rows = cursor.fetchall()
         return [
-            Transaction(date.fromisoformat(date_str), description, amount, account_id)
-            for id_, date_str, description, amount, account_id in rows
+            Transaction(
+                date.fromisoformat(date_str),
+                description,
+                amount,
+                account_id,
+                datetime.fromisoformat(inserted_on),
+            )
+            for date_str, description, amount, account_id, inserted_on in rows
         ]
 
     def insert_account(self, id_: str, type_: str) -> None:
@@ -55,7 +71,7 @@ class FinDB:
         )
         self._conn.commit()
 
-    def get_accounts(self) -> Sequence[Tuple[str, str]]:
+    def get_accounts(self) -> Sequence[Tuple[str, str, str]]:
         cursor = self._conn.cursor()
         cursor.execute("SELECT * FROM accounts")
         rows = cursor.fetchall()
