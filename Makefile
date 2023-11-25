@@ -7,6 +7,9 @@ install_deps:
 	pip install -r requirements.txt
 
 
+qa: format static_checks test
+
+
 static_checks: lint type_check
 
 type_check:

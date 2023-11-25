@@ -70,6 +70,7 @@ def get_reader(path: Path) -> Optional[StatementReader]:
 def main(finances_dir: Path) -> None:
     db = FinDB()
     db.initialize()
+    ids_to_accounts = {id_: (id_, type_) for id_, type_, _ in db.get_accounts()}
 
     for path in finances_dir.rglob("*"):
         if path.is_dir():
@@ -78,6 +79,12 @@ def main(finances_dir: Path) -> None:
         reader = get_reader(path)
         if reader:
             statement = reader.process()
+            if statement.account_id not in ids_to_accounts:
+                db.insert_account(statement.account_id, "bank_account")
+                ids_to_accounts = {
+                    id_: (id_, type_) for id_, type_, _ in db.get_accounts()
+                }
+
             transactions = statement.transactions
             if not transactions:
                 LOG.info(f"No transactions for {path}")

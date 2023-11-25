@@ -53,7 +53,7 @@ class RevolutStatementReader(StatementReader):
         return Statement(
             min([t.date for t in transactions]),
             max([t.date for t in transactions]),
-            "Revolut card",
+            self.ACCOUNT_ID,
             transactions,
         )
 
