@@ -1,5 +1,5 @@
 from datetime import date
-from typing import Sequence
+from typing import Sequence, Tuple
 from pathlib import Path
 import sqlite3
 
@@ -43,6 +43,23 @@ class FinDB:
             Transaction(date.fromisoformat(date_str), description, amount, account_id)
             for id_, date_str, description, amount, account_id in rows
         ]
+
+    def insert_account(self, id_: str, type_: str) -> None:
+        cursor = self._conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO accounts (id, account_type)
+            VALUES (?, ?)
+            """,
+            (id_, type_),
+        )
+        self._conn.commit()
+
+    def get_accounts(self) -> Sequence[Tuple[str, str]]:
+        cursor = self._conn.cursor()
+        cursor.execute("SELECT * FROM accounts")
+        rows = cursor.fetchall()
+        return rows
 
     def close(self):
         self._conn.close()

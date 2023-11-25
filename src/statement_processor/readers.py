@@ -79,11 +79,8 @@ class StatementReader(ABC):
             # TODO: log errors?
             return raw_value
 
-    def _parse_decimal(self, value: str) -> decimal.Decimal:
-        try:
-            return decimal.Decimal(self._normalize(value).strip())
-        except decimal.InvalidOperation:
-            return decimal.Decimal(self._normalize(value.replace(",", "")).strip())
+    def _parse_float(self, value: str) -> float:
+        return float(self._normalize(value).strip())
 
 
 class SantanderBankStatementReader(StatementReader):
@@ -151,9 +148,9 @@ class SantanderBankStatementReader(StatementReader):
         elif token == InputFileTokens.Description:
             return self._normalize(raw_value)
         elif token == InputFileTokens.Amount:
-            return self._parse_decimal(raw_value)
+            return self._parse_float(raw_value)
         elif token == InputFileTokens.Balance:
-            return self._parse_decimal(raw_value)
+            return self._parse_float(raw_value)
         else:
             raise ValueError(f"Could not parse token {token} with value {raw_value}")
 
@@ -215,18 +212,18 @@ class RevolutStatementReader(StatementReader):
         description = self._normalize(raw_description)
         amount = self._get_amount(row)
         raw_balance = row.get("Balance (GBP)", row.get("Balance", None))
-        balance = self._parse_decimal(raw_balance) if raw_balance else None
+        balance = self._parse_float(raw_balance) if raw_balance else None
         bank_category = self._normalize(row.get("Category", None))
         return Transaction(date, description, amount, balance, bank_category)
 
     def _get_amount(self, row: OrderedDict) -> decimal.Decimal:
         # TODO: column names should be in an enum
         if row.get("Paid Out (GBP)"):
-            return self._parse_decimal(row["Paid Out (GBP)"])
+            return self._parse_float(row["Paid Out (GBP)"])
         elif row.get("Amount"):
-            return -self._parse_decimal(row["Amount"])
+            return -self._parse_float(row["Amount"])
         else:
-            return -self._parse_decimal(row["Paid In (GBP)"])
+            return -self._parse_float(row["Paid In (GBP)"])
 
     def _normalize_row(self, row: OrderedDict) -> OrderedDict:
         ret = OrderedDict()
@@ -304,8 +301,7 @@ class SantanderCreditCardStatementReader(StatementReader):
         return Transaction(
             date=self._parse_date(row["Date"], supported_formats=self.DATE_FORMATS),
             description=self._clean_description(row["Description"]),
-            amount=-self._parse_decimal(row["Money in"])
+            amount=-self._parse_float(row["Money in"])
             if row["Money in"]
-            else self._parse_decimal(row["Money out"]),
-            balance=None,
+            else self._parse_float(row["Money out"]),
         )

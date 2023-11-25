@@ -1,7 +1,6 @@
 -- schema.sql
 CREATE TABLE IF NOT EXISTS accounts (
     id TEXT PRIMARY KEY,
-    account_name TEXT NOT NULL,
     account_type TEXT
 );
 

@@ -19,6 +19,16 @@ def test_can_insert_a_transaction(in_memory_uri: str, transaction: Transaction) 
     assert db.get_transactions() == [transaction]
 
 
+def test_can_insert_an_account(in_memory_uri: str) -> None:
+    db = FinDB(in_memory_uri)
+    db.initialize()
+
+    account = ("id", "type")
+    db.insert_account(*account)
+
+    assert db.get_accounts() == [account]
+
+
 @pytest.fixture
 def in_memory_uri() -> str:
     return ":memory:"
