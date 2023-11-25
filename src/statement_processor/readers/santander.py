@@ -3,30 +3,12 @@ import datetime
 import enum
 import logging
 import re
-from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Optional, Sequence, Tuple, Union, Generator, Mapping
+from typing import Tuple, Sequence, Optional, Generator, Mapping
 
-from statement_processor.models import Transaction, Statement
-from statement_processor.utils import parse_float, normalize, parse_date
-
-FromToValue = Tuple[datetime.date, datetime.date]
-AccountValue = str
-DateValue = datetime.date
-DescriptionValue = str
-AmountValue = float
-BalanceValue = float
-
-ParsedValue = Union[
-    FromToValue,
-    AccountValue,
-    DateValue,
-    DescriptionValue,
-    AmountValue,
-    BalanceValue,
-]
-
-StartEnd = Tuple[datetime.date, datetime.date]
+from statement_processor.models import Statement, Transaction
+from statement_processor.readers.api import StatementReader, ParsedValue, FromToValue
+from statement_processor.utils import normalize, parse_date, parse_float
 
 LOG = logging.getLogger(__file__)
 
@@ -45,19 +27,6 @@ class InputFileTokens(enum.Enum):
 TokenizedLine = Tuple[InputFileTokens, ParsedValue]
 
 
-class StatementReader(ABC):
-    @abstractmethod
-    def get_statement(self) -> Statement:
-        """Get a statement representing the file's contents"""
-
-    @staticmethod
-    def _validate_statement_path(path: Path) -> None:
-        """We expect statements to be stored at e.g. .../2023/September/..."""
-        year = int(path.parent.parent.name)
-        month = path.parent.name
-        datetime.datetime.strptime(f"{year}-{month}", "%Y-%B")
-
-
 class SantanderBankStatementReader(StatementReader):
     TOKEN_SEPARATOR = ":"
     SUPERFLUOUS_CHARACTERS = "/t/n"
@@ -72,7 +41,6 @@ class SantanderBankStatementReader(StatementReader):
 
     def __init__(self, path: Path, encoding: str = "iso-8859-15") -> None:
         self._path = path
-        self._validate_statement_path(path)
         self._encoding = encoding
 
         self._account_id = self._get_account_id()
@@ -88,7 +56,7 @@ class SantanderBankStatementReader(StatementReader):
             f"in the file name '{self._path}'"
         )
 
-    def get_statement(self) -> Statement:
+    def process(self) -> Statement:
         tokenized_lines = self._get_tokenized_and_parsed_lines()
 
         # Help out MyPy
@@ -168,87 +136,27 @@ class SantanderBankStatementReader(StatementReader):
         )
 
 
-class RevolutStatementReader(StatementReader):
-    DELIMITERS = [";", ","]
-    DATE_FORMATS = ["%d %b %Y", "%Y-%m-%d %H:%M:%S"]
-    ACCOUNT_ID = "revolut"
-
-    def __init__(self, path: Path, encoding: str = "utf-8") -> None:
-        self._path = path
-        self._validate_statement_path(path)
-        self._encoding = encoding
-
-    def get_statement(self) -> Statement:
-        caught_exceptions = []
-
-        for delimiter in self.DELIMITERS:
-            try:
-                return self._get_statement_with_delimiter(delimiter)
-            except KeyError as ex:  # the wrong delimiter will result in one column
-                caught_exceptions.append(ex)
-                continue
-
-        raise ValueError(
-            f"Could not read the statement. "
-            f"Caught the following exceptions: {caught_exceptions}"
-        )
-
-    def _get_statement_with_delimiter(self, delimiter: str) -> Statement:
-        with self._path.open("r", encoding=self._encoding) as input_file:
-            reader = csv.DictReader(input_file, delimiter=delimiter)
-
-            transactions = []
-            for row in reader:
-                transactions.append(self._create_transaction(row))
-
-        return Statement(
-            min([t.date for t in transactions]),
-            max([t.date for t in transactions]),
-            "Revolut card",
-            transactions,
-        )
-
-    def _create_transaction(self, row: Mapping[str, str]) -> Transaction:
-        row = self._normalize_row(row)
-        # TODO: move column names into an enum
-        raw_date = (
-            row["Completed Date"] if row["Completed Date"] else row["Started Date"]
-        )
-        date = parse_date(raw_date, supported_formats=self.DATE_FORMATS)
-        raw_description = row.get("Description", row.get("Reference", ""))
-        description = normalize(raw_description)
-        amount = self._get_amount(row)
-        return Transaction(date, description, amount, self.ACCOUNT_ID)
-
-    @staticmethod
-    def _get_amount(row: Mapping[str, str]) -> float:
-        # TODO: column names should be in an enum
-        if row.get("Paid Out (GBP)"):
-            return parse_float(row["Paid Out (GBP)"])
-        elif row.get("Amount"):
-            return -parse_float(row["Amount"])
-        else:
-            return -parse_float(row["Paid In (GBP)"])
-
-    @staticmethod
-    def _normalize_row(row: Mapping[str, str]) -> Mapping[str, str]:
-        return {normalize(k): normalize(v) for k, v in row.items()}
+class CreditCardColumn(str, enum.Enum):
+    CARD_NO = "Card no."
+    DATE = "Date"
+    DESCRIPTION = "Description"
+    MONEY_IN = "Money in"
+    MONEY_OUT = "Money out"
 
 
 class SantanderCreditCardStatementReader(StatementReader):
     DELIMITER = "\t"
     DATE_FORMATS = ["%Y-%m-%d"]
     CARD_NUMBER_LAST_DIGITS = "9976"  # for validation
-    ACCOUNT_ID = "santander_credit_card"
+    ACCOUNT_ID = "santander_credit_card_xx_9976"
 
     def __init__(self, path: Path, encoding: str = "utf-8") -> None:
         self._path = path
-        self._validate_statement_path(path)
         self._encoding = encoding
 
     def _filtered_input(self) -> Generator[str, None, None]:
         """Deal with Santander file messiness."""
-        with open(self._path, "r", encoding=self._encoding) as input_file:
+        with self._path.open("r", encoding=self._encoding) as input_file:
             for i, row in enumerate(input_file):
                 if i == 0:
                     card_num = row[-5:-1]
@@ -266,7 +174,7 @@ class SantanderCreditCardStatementReader(StatementReader):
                 cleanup2 = re.sub("[ ]+", " ", cleanup1)
                 yield cleanup2
 
-    def get_statement(self) -> Statement:
+    def process(self) -> Statement:
         reader = csv.DictReader(self._filtered_input(), delimiter=self.DELIMITER)
         transactions = []
         for row in reader:
@@ -280,25 +188,22 @@ class SantanderCreditCardStatementReader(StatementReader):
         return Statement(
             min([t.date for t in transactions]),
             max([t.date for t in transactions]),
-            "Santander credit card",
+            self.ACCOUNT_ID,
             transactions,
         )
 
-    @staticmethod
-    def _clean_description(description: str) -> str:
-        return normalize(re.sub("PURCHASE - DOMESTIC", "", description))
-
     def _create_transaction(self, row: Mapping[str, str]) -> Transaction:
-        if row["Card no."]:
-            card_num = row["Card no."][-4:]
+        c = CreditCardColumn
+        if row[c.CARD_NO]:
+            card_num = row[c.CARD_NO][-4:]
             msg = "unexpected card number: {}".format(card_num)
             assert card_num == self.CARD_NUMBER_LAST_DIGITS, msg
 
         return Transaction(
-            date=parse_date(row["Date"], supported_formats=self.DATE_FORMATS),
-            description=self._clean_description(row["Description"]),
-            amount=-parse_float(row["Money in"])
-            if row["Money in"]
-            else parse_float(row["Money out"]),
+            date=parse_date(row[c.DATE], supported_formats=self.DATE_FORMATS),
+            description=row[c.DESCRIPTION],
+            amount=-parse_float(row[c.MONEY_IN])
+            if row[c.MONEY_IN]
+            else parse_float(row[c.MONEY_OUT]),
             account_id=self.ACCOUNT_ID,
         )

@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Optional
 
 from statement_processor.db import FinDB
-from statement_processor.readers import (
+from statement_processor.readers.api import StatementReader
+from statement_processor.readers.revolut import RevolutStatementReader
+from statement_processor.readers.santander import (
     SantanderBankStatementReader,
     SantanderCreditCardStatementReader,
-    RevolutStatementReader,
-    StatementReader,
 )
 
 LOG = logging.getLogger(__file__)
@@ -77,7 +77,7 @@ def main(finances_dir: Path) -> None:
 
         reader = get_reader(path)
         if reader:
-            statement = reader.get_statement()
+            statement = reader.process()
             transactions = statement.transactions
             if not transactions:
                 LOG.info(f"No transactions for {path}")
