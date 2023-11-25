@@ -141,7 +141,6 @@ class SantanderBankStatementReader(StatementReader):
 
         raise ValueError(f"Unrecognised token on line: {line}")
 
-    # TODO: types can be made stricter via typing.overload decorator
     def _parse_value(self, token: InputFileTokens, raw_value: str) -> ParsedValue:
         if token == InputFileTokens.FromTo:
             return self._parse_from_to_token(raw_value)

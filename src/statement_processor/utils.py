@@ -1,6 +1,9 @@
 import datetime
+import logging
 import unicodedata
 from typing import Sequence
+
+LOG = logging.getLogger(__file__)
 
 
 def parse_float(value: str) -> float:
@@ -11,7 +14,7 @@ def normalize(raw_value: str) -> str:
     try:
         return unicodedata.normalize("NFKD", raw_value).strip()
     except TypeError:
-        # TODO: log errors?
+        LOG.debug(f"Could not normalize '{raw_value}', skipping")
         return raw_value
 
 
