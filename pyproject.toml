@@ -1,34 +1,84 @@
-[tool.poetry]
-name = "statement_processor"
-version = "0.1.0"
-description = "A few little helper scripts to automate aggregating my personal finance statements"
-authors = ["elvijs <elvijsdr@gmail.com>"]
-
-[tool.poetry.dependencies]
-python = "^3.7"
-python-dateutil = "^2.8.1"
-
-[tool.poetry.dev-dependencies]
-pytest = "^5.4.3"
-taskipy = "^1.2.1"
-mypy = "^0.782"
-flake8 = "^3.8.3"
-black = "^19.10b0"
-isort = "^4.3.21"
-
-[tool.taskipy.tasks]
-all_checks = "task test && task check_format && task static_checks"
-test = "pytest tests"
-static_checks = "task mypy && task lint"
-mypy = "mypy statement_processor"
-lint = "flake8 --max-line-length 88 statement_processor"
-format = "task black && task isort"
-check_format = "task black --check && task isort --diff"
-black = "black statement_processor"
-isort = "isort --atomic statement_processor/*.py"
-
-process_statements = "python -m statement_processor.main"
-
 [build-system]
-requires = ["poetry>=0.12"]
-build-backend = "poetry.masonry.api"
+requires = [
+  "setuptools >= 40.9.0",
+  "wheel",
+]
+build-backend = "setuptools.build_meta"
+
+
+# Using https://setuptools.pypa.io/en/latest/userguide/quickstart.html#basic-use
+[tool.setuptools.packages.find]
+where = ["src"]  # ["."] by default
+include = ["statement_processor*"]
+exclude = ["tests*"]
+
+
+[project]
+name = "personal_finance"
+description = "A little personal finance helper"
+version = "0.1.0"
+authors = [
+    { name = "Elvijs Sarkans" }
+]
+dependencies = [
+
+]
+
+
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+# Same as Black.
+line-length = 88
+indent-width = 4
+
+# Assume Python 3.10
+target-version = "py310"
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
+select = ["E4", "E7", "E9", "F"]
+ignore = []
+
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
