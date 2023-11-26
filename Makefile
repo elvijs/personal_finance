@@ -1,5 +1,9 @@
 # A collection of convenience tools for running the typical tasks
 
+transaction_viewer:
+	streamlit run scripts/view_transactions.py
+
+
 install: install_deps
 	pip install -e .
 

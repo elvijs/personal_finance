@@ -1,6 +1,10 @@
 import dataclasses
 import datetime
-from typing import Sequence, Optional
+from enum import Enum
+from typing import Sequence, Optional, Tuple
+
+
+TransactionPrimaryKey = Tuple[datetime.date, str, float]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -9,18 +13,19 @@ class Transaction:
     description: str
     amount: float
     account_id: str
-    inserted_on: Optional[datetime.datetime] = None
+    is_shared_expense: bool = False
+    added_on: Optional[datetime.datetime] = None
+    updated_on: Optional[datetime.datetime] = None
 
-    def similar(self, other: "Transaction") -> bool:
-        return (
-            self.date == other.date
-            and self.description == other.description
-            and self.amount == other.amount
-            and self.account_id == other.account_id
-        )
+    @property
+    def primary_key(self) -> TransactionPrimaryKey:
+        return self.date, self.description, self.amount
+
+    def same_primary_key(self, other: "Transaction") -> bool:
+        return self.primary_key == other.primary_key
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class Statement:
     from_date: datetime.date
     to_date: datetime.date
@@ -28,122 +33,22 @@ class Statement:
     transactions: Sequence[Transaction]
 
 
-# class ProcessedTransaction(Transaction):
-#     LONG_DESC_REGEX_TO_SHORT_DESC = load_map(
-#         from_column=MappingRuleColumn.long_desc_regex,
-#         to_column=MappingRuleColumn.short_desc,
-#     )
-#     SHORT_DESC_TO_CATEGORY_MAP = load_map(
-#         from_column=MappingRuleColumn.short_desc, to_column=MappingRuleColumn.category
-#     )
-#     SHORT_DESC_TO_SUB_CATEGORY_MAP = load_map(
-#         from_column=MappingRuleColumn.short_desc,
-#         to_column=MappingRuleColumn.sub_category,
-#     )
-#     SUB_CATEGORY_TO_CATEGORY_MAP = load_map(
-#         from_column=MappingRuleColumn.sub_category, to_column=MappingRuleColumn.category
-#     )
-#     BANK_CATEGORY_TO_CATEGORY_MAP = load_map(
-#         from_column=MappingRuleColumn.bank_category,
-#         to_column=MappingRuleColumn.category,
-#     )
-#     BANK_CATEGORY_TO_SUB_CATEGORY_MAP = load_map(
-#         from_column=MappingRuleColumn.bank_category,
-#         to_column=MappingRuleColumn.sub_category,
-#     )
-#
-#     HOUSEHOLD_CATEGORIES = {"Household essentials", "Household nice-to-haves"}
-#
-#     def __init__(
-#         self,
-#         date: datetime.date,
-#         description: str,
-#         amount: decimal.Decimal,
-#         balance: decimal.Decimal,
-#         bank_category: Optional[str] = None,
-#     ) -> None:
-#         mapped_description = self._map_description(description)
-#         super().__init__(date, mapped_description, amount, balance, bank_category)
-#
-#         self._sub_category = self._get_sub_category()
-#         self._category = self._get_category()
-#
-#     @property
-#     def category(self) -> Optional[str]:
-#         return self._category
-#
-#     @property
-#     def sub_category(self) -> Optional[str]:
-#         return self._sub_category
-#
-#     @property
-#     def is_household_expense(self) -> Optional[bool]:
-#         return self._is_household_expense()
-#
-#     def as_ordered_dict(self) -> OrderedDict:
-#         """Omit balance from the view."""
-#         if isinstance(self.is_household_expense, bool):
-#             is_household_expense = "Yes" if self._is_household_expense() else "No"
-#         else:
-#             is_household_expense = ""
-#
-#         return OrderedDict(
-#             [
-#                 ("description", self.description),
-#                 ("amount", self.amount),
-#                 ("category", self.category if self.category else ""),
-#                 ("sub_category", self.sub_category if self.sub_category else ""),
-#                 ("date", self.date),
-#                 ("is_household_expense", is_household_expense),
-#                 ("bank_category", self.bank_category if self.bank_category else ""),
-#             ]
-#         )
-#
-#     def _map_description(self, description: str) -> str:
-#         for desc_regex, short_desc in self.LONG_DESC_REGEX_TO_SHORT_DESC.items():
-#             if re.search(desc_regex, description):
-#                 return short_desc
-#         return description
-#
-#     def _get_category(self) -> Optional[str]:
-#         if (
-#             self.bank_category
-#             and self.bank_category in self.BANK_CATEGORY_TO_CATEGORY_MAP
-#         ):
-#             return self.BANK_CATEGORY_TO_CATEGORY_MAP[self.bank_category]
-#
-#         if self.sub_category and self.sub_category in self.SUB_CATEGORY_TO_CATEGORY_MAP:
-#             return self.SUB_CATEGORY_TO_CATEGORY_MAP[self.sub_category]
-#
-#         if self.description in self.SHORT_DESC_TO_CATEGORY_MAP:
-#             return self.SHORT_DESC_TO_CATEGORY_MAP[self.description]
-#
-#         return None
-#
-#     def _get_sub_category(self) -> Optional[str]:
-#         if (
-#             self.bank_category
-#             and self.bank_category in self.BANK_CATEGORY_TO_SUB_CATEGORY_MAP
-#         ):
-#             return self.BANK_CATEGORY_TO_SUB_CATEGORY_MAP[self.bank_category]
-#
-#         if self.description in self.SHORT_DESC_TO_SUB_CATEGORY_MAP:
-#             return self.SHORT_DESC_TO_SUB_CATEGORY_MAP[self.description]
-#
-#         return None
-#
-#     def _is_household_expense(self) -> Optional[bool]:
-#         if self.category in self.HOUSEHOLD_CATEGORIES:
-#             return True
-#         elif self.category:
-#             return False
-#         else:
-#             return None
-#
-#     def __str__(self) -> str:
-#         return (
-#             super().__str__()
-#             + ". Category: {}, subcategory: {}, " "household expense: {}".format(
-#                 self.category, self.sub_category, self.is_household_expense
-#             )
-#         )
+class TextFeatureType(str, Enum):
+    SHORT_DESCRIPTION = "short_description"
+
+
+@dataclasses.dataclass(frozen=True)
+class TextFeature:
+    name: TextFeatureType
+    transaction_id: TransactionPrimaryKey
+    value: str
+    origin: str  # "manual" or "decision_tree_classifier_v1.2"
+    added_on: Optional[datetime.datetime] = None
+
+    def similar(self, other: "TextFeature") -> bool:
+        return (
+            self.name == other.name
+            and self.transaction_id == other.transaction_id
+            and self.value == other.value
+            and self.origin == other.origin
+        )
