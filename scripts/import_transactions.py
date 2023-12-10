@@ -91,7 +91,8 @@ def main(finances_dir: Path) -> None:
                 continue
 
             for t in transactions:
-                # the same transaction can be represented in more than 1
+                # The same transaction can be represented in more than 1 statement
+                # It may alo be in the DB already. Where this is the case, we ignore the warning.
                 db.insert_transaction(t, ignore_duplicates=True)
 
 

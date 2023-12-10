@@ -82,3 +82,8 @@ skip-magic-trailing-comma = false
 
 # Like Black, automatically detect the appropriate line ending.
 line-ending = "auto"
+
+
+[[tool.mypy.overrides]]
+module = "plotly.*"
+ignore_missing_imports = true
