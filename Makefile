@@ -4,6 +4,10 @@ transaction_viewer:
 	streamlit run scripts/view_transactions.py
 
 
+analyser:
+	streamlit run scripts/analyse.py
+
+
 install: install_deps
 	pip install -e .
 

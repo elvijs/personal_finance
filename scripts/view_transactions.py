@@ -4,7 +4,7 @@ import streamlit as st
 from statement_processor.db import FinDB
 from statement_processor.models import Transaction, TextFeature, TextFeatureType
 
-from statement_processor.data_utils import to_dataframe
+from statement_processor.data_utils import transactions_to_dataframe
 from statement_processor.ui_components import optional_date_filtering
 
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     st.title("Transaction viewer")
 
     transactions = db.get_transactions()
-    df = to_dataframe(transactions)
+    df = transactions_to_dataframe(transactions)
     df = optional_date_filtering(df)
 
     with st.expander("View summary stats"):
@@ -54,3 +54,7 @@ if __name__ == "__main__":
             _store_changes(df, edited_df)
     else:
         st.dataframe(df)
+
+    features = db.get_text_features()
+    dff = pd.DataFrame(features)
+    st.dataframe(dff)

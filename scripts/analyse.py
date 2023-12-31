@@ -2,7 +2,7 @@ import streamlit as st
 from statement_processor.db import FinDB
 import plotly.express as px
 
-from statement_processor.data_utils import to_dataframe
+from statement_processor.data_utils import transactions_to_dataframe
 from statement_processor.ui_components import optional_date_filtering
 
 if __name__ == "__main__":
@@ -11,7 +11,7 @@ if __name__ == "__main__":
     st.title("Transaction analyser")
 
     transactions = db.get_transactions()
-    df = to_dataframe(transactions, cast_to_datetime=True)
+    df = transactions_to_dataframe(transactions, cast_to_datetime=True)
     df = optional_date_filtering(df)
 
     with st.expander("View summary stats"):
