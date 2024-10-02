@@ -56,5 +56,8 @@ if __name__ == "__main__":
         st.dataframe(df)
 
     features = db.get_text_features()
-    dff = pd.DataFrame(features)
+    flat_features = [
+        f.flatten() for f in features
+    ]
+    dff = pd.DataFrame(flat_features)
     st.dataframe(dff)

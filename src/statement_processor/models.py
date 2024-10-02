@@ -1,8 +1,7 @@
 import dataclasses
 import datetime
 from enum import Enum
-from typing import Sequence, Optional, Tuple
-
+from typing import Sequence, Optional, Tuple, Mapping, Any
 
 TransactionPrimaryKey = Tuple[datetime.date, str, float]
 
@@ -52,3 +51,14 @@ class TextFeature:
             and self.value == other.value
             and self.origin == other.origin
         )
+
+    def flatten(self) -> Mapping[str, Any]:
+        return {
+            "date": self.transaction_id[0],
+            "description": self.transaction_id[1],
+            "amount": self.transaction_id[2],
+            "feature": self.value,
+            "feature_type": self.name,
+            "origin": self.origin,
+            "added_on": self.added_on,
+        }
