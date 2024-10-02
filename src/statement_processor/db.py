@@ -4,6 +4,7 @@ from typing import Sequence, Tuple, Optional
 from pathlib import Path
 import sqlite3
 
+from dateutil.parser import isoparse
 from statement_processor.models import Transaction, TextFeature
 
 _DEFAULT_DB = Path(__file__).parent.parent.parent / "data" / "finance.db"
@@ -92,8 +93,8 @@ class FinDB:
                 amount,
                 account_id,
                 bool(is_shared_expense),
-                datetime.fromisoformat(inserted_on),
-                datetime.fromisoformat(updated_on),
+                isoparse(inserted_on),
+                isoparse(updated_on),
             )
             for date_str, description, amount, account_id, is_shared_expense, inserted_on, updated_on in rows
         ]
@@ -124,7 +125,7 @@ class FinDB:
         return [
             TextFeature(
                 name=name,
-                transaction_id=(date.fromisoformat(t_date), t_desc, t_amount),
+                transaction_id=(isoparse(t_date), t_desc, t_amount),
                 value=value,
                 origin=origin,
             )
