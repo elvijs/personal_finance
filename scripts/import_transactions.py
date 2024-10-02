@@ -97,6 +97,6 @@ def main(finances_dir: Path) -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     args = _get_cli_args()
     main(args.finances_dir)
