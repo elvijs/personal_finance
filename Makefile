@@ -1,5 +1,9 @@
 # A collection of convenience tools for running the typical tasks
 
+import:
+	python scripts/import_transactions.py --finances_dir=/Users/elvijssarkans/pCloud\ Drive/Documents/finances/statements
+
+
 transaction_viewer:
 	streamlit run scripts/view_transactions.py
 
