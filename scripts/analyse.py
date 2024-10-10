@@ -3,7 +3,7 @@ from statement_processor.db import FinDB
 import plotly.express as px
 
 from statement_processor.data_utils import transactions_to_dataframe
-from statement_processor.ui_components import optional_date_filtering
+from statement_processor.ui_components import optional_filtering
 
 if __name__ == "__main__":
     db = FinDB()
@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     transactions = db.get_transactions()
     df = transactions_to_dataframe(transactions, cast_to_datetime=True)
-    df = optional_date_filtering(df)
+    df = optional_filtering(df)
 
     with st.expander("View summary stats"):
         st.dataframe(df.describe())

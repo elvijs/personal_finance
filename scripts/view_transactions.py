@@ -5,7 +5,7 @@ from statement_processor.db import FinDB
 from statement_processor.models import Transaction, TextFeature, TextFeatureType
 
 from statement_processor.data_utils import transactions_to_dataframe
-from statement_processor.ui_components import optional_date_filtering
+from statement_processor.ui_components import optional_filtering
 
 
 def _store_changes(old_df: pd.DataFrame, new_df: pd.DataFrame) -> None:
@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     transactions = db.get_transactions()
     df = transactions_to_dataframe(transactions)
-    df = optional_date_filtering(df)
+    df = optional_filtering(df)
 
     with st.expander("View summary stats"):
         st.dataframe(df.describe())
@@ -56,8 +56,6 @@ if __name__ == "__main__":
         st.dataframe(df)
 
     features = db.get_text_features()
-    flat_features = [
-        f.flatten() for f in features
-    ]
+    flat_features = [f.flatten() for f in features]
     dff = pd.DataFrame(flat_features)
     st.dataframe(dff)
