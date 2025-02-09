@@ -78,7 +78,11 @@ def main(finances_dir: Path) -> None:
 
         reader = get_reader(path)
         if reader:
-            statement = reader.process()
+            try:
+                statement = reader.process()
+            except Exception as ex:
+                LOG.info(f"Issue processing {path}: {ex}")
+                continue
             if statement.account_id not in ids_to_accounts:
                 db.insert_account(statement.account_id, "bank_account")
                 ids_to_accounts = {
